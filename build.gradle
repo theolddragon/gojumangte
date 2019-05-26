@@ -1,3 +1,18 @@
+buildscript {
+    ext {
+        springBootVersion = '2.1.5.RELEASE'
+        querydslPluginVersion = '1.0.10' // 플러그인 버전
+    }
+    repositories {
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" } // 플러그인 저장소
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("gradle.plugin.com.ewerk.gradle.plugins:querydsl-plugin:${querydslPluginVersion}") // querydsl 플러그인 의존성 등록
+    }
+}
+
 plugins {
     id 'org.asciidoctor.convert' version '1.5.3'
     id 'org.springframework.boot' version '2.1.5.RELEASE'
@@ -5,10 +20,15 @@ plugins {
 }
 
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'war'
 
 group = 'kr.gojumangte'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
+
+bootWar {
+    archiveName = "ROOT.war"
+}
 
 configurations {
     compileOnly {
@@ -25,24 +45,44 @@ ext {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-activemq'
+    // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-cache'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-data-rest'
     implementation 'org.springframework.boot:spring-boot-starter-hateoas'
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.session:spring-session-core'
-    compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.springframework.boot:spring-boot-devtools'
+
+    // Cache
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    compile group: 'net.sf.ehcache', name: 'ehcache', version: '2.10.6'
+
+
+    // Database
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     runtimeOnly 'com.h2database:h2'
     runtimeOnly 'mysql:mysql-connector-java'
-    annotationProcessor 'org.projectlombok:lombok'
+    compile("com.querydsl:querydsl-jpa")
+    compile("com.querydsl:querydsl-apt")
+
+    // JMS activeMQ
+    implementation 'org.springframework.boot:spring-boot-starter-activemq'
+    compile("org.apache.activemq:activemq-broker")
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
     testImplementation 'org.springframework.security:spring-security-test'
+    testCompile group: 'org.testng', name: 'testng', version: '6.14.3'
+
+    // DEV
+    runtimeOnly 'org.springframework.boot:spring-boot-devtools'
+    
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.9'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
 
 test {
@@ -52,4 +92,29 @@ test {
 asciidoctor {
     inputs.dir snippetsDir
     dependsOn test
+}
+
+// querydsl 적용
+apply plugin: "com.ewerk.gradle.plugins.querydsl" // Plugin 적용
+def querydslSrcDir = file('src/querydsl/generated')
+querydsl {
+    library = "com.querydsl:querydsl-apt"
+    jpa = true
+    querydslSourcesDir = querydslSrcDir
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java', querydslSrcDir]
+        }
+    }
+}
+
+compileQuerydsl{
+    options.annotationProcessorPath = configurations.querydsl
+}
+
+configurations {
+    querydsl.extendsFrom compileClasspath
 }
