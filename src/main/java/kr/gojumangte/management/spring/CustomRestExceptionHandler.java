@@ -11,7 +11,6 @@ import kr.gojumangte.management.common.mapper.response.ApiErrorResource;
 import kr.gojumangte.management.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -37,7 +36,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity customExceptionHandler(CustomException ex, WebRequest request) {
     logException(ex);
     ApiError apiError = new ApiError(
-        ex.getHttpStatus(),
+        ex.getStatus(),
         messageSource.getMessage(ex.getCode(), ex.getArgs(), request.getLocale()),
         ex.getErrors()
     );
@@ -63,7 +62,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
 
 
   @Override
-  protected ResponseEntity handleMethodArgumentNotValid(
+  protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException ex,
       HttpHeaders headers,
       HttpStatus status,
@@ -82,7 +81,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @Override
-  protected ResponseEntity handleMissingServletRequestParameter(
+  protected ResponseEntity<Object> handleMissingServletRequestParameter(
       MissingServletRequestParameterException ex,
       HttpHeaders headers,
       HttpStatus status,
@@ -131,7 +130,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @Override
-  protected ResponseEntity handleHttpRequestMethodNotSupported(
+  protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(
       HttpRequestMethodNotSupportedException ex,
       HttpHeaders headers,
       HttpStatus status,
@@ -154,7 +153,7 @@ public class CustomRestExceptionHandler extends ResponseEntityExceptionHandler {
   }
 
   @Override
-  protected ResponseEntity handleHttpMediaTypeNotSupported(
+  protected ResponseEntity<Object> handleHttpMediaTypeNotSupported(
       HttpMediaTypeNotSupportedException ex,
       HttpHeaders headers,
       HttpStatus status,
